@@ -9,6 +9,9 @@ let jobId = -1;
 export class UpdateAPK {
 	constructor(options) {
 		this.options = options;
+		// You must be sure filepaths.xml exposes this path or you will have a FileProvider error API24+
+		// You might check {totalSpace, freeSpace} = await RNFS.getFSInfo() to make sure there is room
+		this.options.downloadDestPath = this.options.downloadDestPath || `${RNFS.CachesDirectoryPath}/NewApp.apk`;
 	}
 
 	get = (url, success, error, options = {}) => {
@@ -65,11 +68,11 @@ export class UpdateAPK {
 				if (this.options.forceUpdateApp) {
 					this.options.forceUpdateApp();
 				}
-				this.downloadApk(remote);
+				this.downloadAndInstallApk(remote);
 			} else if (this.options.needUpdateApp) {
 				this.options.needUpdateApp(isUpdate => {
 					if (isUpdate) {
-						this.downloadApk(remote);
+						this.downloadAndInstallApk(remote);
 					}
 				}, remote.whatsNew);
 			}
@@ -92,7 +95,6 @@ export class UpdateAPK {
 		const progressDivider = 1;
 		// You must be sure filepaths.xml exposes this path or you will have a FileProvider error API24+
 		// You might check {totalSpace, freeSpace} = await RNFS.getFSInfo() to make sure there is room
-		const downloadDestPath = `${RNFS.CachesDirectoryPath}/NewApp.apk`;
 
 		let options = this.options.apkOptions ? this.options.apkOptions : {};
 
@@ -100,7 +102,7 @@ export class UpdateAPK {
 			Object.assign(
 				{
 					fromUrl: remote.apkUrl,
-					toFile: downloadDestPath,
+					toFile: this.options.downloadDestPath,
 					begin,
 					progress,
 					background: true,
@@ -112,14 +114,14 @@ export class UpdateAPK {
 
 		jobId = ret.jobId;
 
-		ret.promise
+		return ret.promise
 			.then(res => {
 				if (res['statusCode'] >= 400 && res['statusCode'] <= 599) {
 					throw 'Failed to Download APK. Server returned with ' + res['statusCode'] + ' statusCode';
 				}
 				console.log('RNUpdateAPK::downloadApk - downloadApkEnd');
 				this.options.downloadApkEnd && this.options.downloadApkEnd();
-				RNUpdateAPK.getApkInfo(downloadDestPath)
+				RNUpdateAPK.getApkInfo(this.options.downloadDestPath)
 					.then(res => {
 						console.log('RNUpdateAPK::downloadApk - Old Cert SHA-256: ' + RNUpdateAPK.signatures[0].thumbprint);
 						console.log('RNUpdateAPK::downloadApk - New Cert SHA-256: ' + res.signatures[0].thumbprint);
@@ -134,14 +136,22 @@ export class UpdateAPK {
 						// re-throw so we don't attempt to install the APK, this will call the downloadApkError handler
 						throw rej;
 					});
-				RNUpdateAPK.installApk(downloadDestPath, this.options.fileProviderAuthority);
-
 				jobId = -1;
 			})
 			.catch(err => {
 				this.downloadApkError(err);
 				jobId = -1;
 			});
+	};
+
+	installApk = path => {
+		RNUpdateAPK.installApk(path || this.options.downloadDestPath, this.options.fileProviderAuthority);
+	};
+
+	downloadAndInstallApk = remote => {
+    this.downloadApk(remote).then(() => {
+      this.installApk()
+    })
 	};
 
 	getAppStoreVersion = () => {

@@ -42,5 +42,6 @@
   "readmeFilename": "README.md",
   "bugs": {
     "url": "https://github.com/mikehardy/react-native-update-apk/issues"
-  }
+  },
+  "types": "./types.d.ts"
 }
