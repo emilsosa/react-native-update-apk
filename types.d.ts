@@ -1,13 +1,14 @@
 /// <reference types="node" />
 
-
 declare module 'rn-update-apk' {
 	export class UpdateAPK {
-		constructor(options: any) {
-			this.options = options;
-		}
+		constructor(options: any);
 
 		downloadApk(remote: {apkUrl: string}): Promise<void>;
+
+		downloadAndInstallApk(): void;
+
+		installApk(): void;
 	}
 
 	export function patchSSLProvider(force: boolean, dialogIfRepairable: boolean): Promise<void>;

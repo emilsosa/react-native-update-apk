@@ -3,6 +3,7 @@
 import {NativeModules, Platform} from 'react-native';
 
 const RNUpdateAPK = NativeModules.RNUpdateAPK;
+const RNFS = require('react-native-fs');
 
 let jobId = -1;
 
@@ -149,9 +150,9 @@ export class UpdateAPK {
 	};
 
 	downloadAndInstallApk = remote => {
-    this.downloadApk(remote).then(() => {
-      this.installApk()
-    })
+		this.downloadApk(remote).then(() => {
+			this.installApk();
+		});
 	};
 
 	getAppStoreVersion = () => {
